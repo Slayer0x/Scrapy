@@ -115,10 +115,10 @@ def filexists():
     while True:
         banners('replaybanner')
         print(BLUE + "\n\n[!] If you get errors while replaying, try using Windows [!] " + RESET)
-        filename = input("\n\n[+] Supply the .pcap file name (Include path if needed): ")
+        filename = input("\n\n[+] Supply the .pcap /.pcapng file name (Include path if needed): ")
         
         # Verify that the file exists and has the correct extension
-        if os.path.exists(filename) and filename.lower().endswith(".pcap"):
+        if os.path.exists(filename) and filename.lower().endswith((".pcap", ".pcapng")):
             return filename
         else:
             print(RED + f"\n[!] {filename} doesn't exist or is not a .pcap file. [!]" + RESET)
@@ -394,13 +394,25 @@ def replay():
     captured = filexists() # Ask for the file 
     pkts = rdpcap(captured) # Extract packets from .pcap
     num_repetitions = ''
+    Source_IP = ''
 
-    num_repetitions = input("\nHow many times do you want to repeat the packet sending process? Enter = 1: ")
+    Source_IP = input("\n[+] Do you want to change the Source IP? y/N: ") #In case Source IP Change is needed.  
+    if (Source_IP.upper() == 'Y'): 
+        Source_IP = input("\n[+] Insert the new Source IP: (ex. 192.168.1.1): ") 
+        while not validateip(Source_IP):
+            clear_screen()
+            banners("replaybanner")
+            print("\n[!] Enter a valid IP [!]")
+            Source_IP = input("\n[+] Insert the new Source IP: (ex. 192.168.1.1): ")
+    else:
+        Source_IP = ''
+
+    num_repetitions = input("\n[+] How many times do you want to repeat the packet sending process? Enter = 1: ")
     while not (num_repetitions.isdigit() or num_repetitions == ''):
         clear_screen()
         banners("replaybanner")
         print(RED + "\n[!] Please enter a valid integer number or press Enter. [!]" + RESET)
-        num_repetitions = input("\nHow many times do you want to repeat the packet sending process? Enter = 1: ")
+        num_repetitions = input("\n[+] How many times do you want to repeat the packet sending process? Enter = 1: ")
     
     if num_repetitions == '':
         num_repetitions = 1
@@ -408,10 +420,10 @@ def replay():
         num_repetitions = int(num_repetitions)    
 
 
-    timings = input("\nDo you want to replicate the original timings between packets? Y/N: ") # Ask if the user want's to respect the original timings.
+    timings = input("\n[+] Do you want to replicate the original timings between packets? Y/N: ") # Ask if the user want's to respect the original timings.
     while not (timings.upper() == 'Y' or timings.upper() == 'N'):
         
-        timings = input("\nDo you want to replicate the original timings between packets? Y/N: ")
+        timings = input("\n[+] Do you want to replicate the original timings between packets? Y/N: ")
 
     for _ in range(num_repetitions):
         clear_screen()
@@ -427,6 +439,8 @@ def replay():
                 time.sleep(time_diff) # Wait the calculated time.
                 clk = float(p.time)
                 try:
+                    if (Source_IP): #Change the source IP if the user wants to
+                        p[0][IP].src = Source_IP
                     # Disable verbose mode to prevent "Sent 1 packets" output
                     sendp(p, verbose=0)
                 except:
@@ -435,6 +449,8 @@ def replay():
         else:
             for p in tqdm(pkts, desc="Replaying Packets", unit=" packet"):
                 try:
+                    if (Source_IP):#Change the source IP if the user wants to
+                        p[0][IP].src = Source_IP
                     # Disable verbose mode to prevent "Sent 1 packets" output
                     sendp(p, verbose=0)
                 except:

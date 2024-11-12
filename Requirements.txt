@@ -1,5 +1,2 @@
 scapy
 tqdm
-ctypes
-os
-time
